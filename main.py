@@ -1,30 +1,29 @@
 from flask import Flask, request
-from telegram import Update, Bot
-from telegram.ext import Dispatcher, CommandHandler, CallbackContext
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
+import asyncio
 import os
 
 TOKEN = "7929780148:AAEKw3t9XUQdc-LkxK2J9tCWwbxqMtahjoU"
-bot = Bot(token=TOKEN)
-dispatcher = Dispatcher(bot, None, workers=0)
-
-# /start 指令
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Bot 已啟動")
-
-dispatcher.add_handler(CommandHandler("start", start))
 
 app = Flask(__name__)
 
-@app.route("/")
-def home():
-    return "Telegram bot is running!"
+# 初始化 telegram bot application（新版）
+application = Application.builder().token(TOKEN).build()
 
+# 處理 /start 指令
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot 已啟動")
+
+application.add_handler(CommandHandler("start", start))
+
+# 設定 webhook 接收 telegram 的請求
 @app.route("/webhook", methods=["POST"])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
+async def webhook():
+    data = request.get_json(force=True)
+    update = Update.de_json(data, application.bot)
+    await application.process_update(update)
     return "ok"
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # <-- 重點：Render 會給你 PORT
-    app.run(host="0.0.0.0", port=port)
+    app.run(port=5000)
