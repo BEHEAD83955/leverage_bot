@@ -1,28 +1,27 @@
 from flask import Flask, request
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram import Bot, Update
+from telegram.ext import Dispatcher, CommandHandler, CallbackContext
 
 TOKEN = "7929780148:AAEKw3t9XUQdc-LkxK2J9tCWwbxqMtahjoU"
+bot = Bot(token=TOKEN)
 
 app = Flask(__name__)
 
-# 建立 Telegram Application（新版寫法）
-application = Application.builder().token(TOKEN).build()
+dispatcher = Dispatcher(bot=bot, update_queue=None, workers=0)
 
-# /start 指令處理
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🎉 Bot 已啟動成功！")
+# 處理 /start 指令
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("Bot 已啟動")
 
-# 加入指令處理器
-application.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(CommandHandler("start", start))
 
-# Webhook 處理函數
-@app.route('/webhook', methods=["POST"])
+# webhook 接收處理
+@app.route("/webhook", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    application.update_queue.put_nowait(update)
+    update = Update.de_json(request.get_json(force=True), bot)
+    dispatcher.process_update(update)
     return "ok"
 
-# 本地測試可用（Render 上不會用到）
+# ✅ 關鍵：host="0.0.0.0"
 if __name__ == "__main__":
-    app.run(port=5000)
+    app.run(host="0.0.0.0", port=5000)
