@@ -1,10 +1,9 @@
 services:
   - type: web
     name: leverage-bot
-    env: python
-    branch: main  # 你要部署的分支
+    runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python3 main.py
+    startCommand: python main.py
     envVars:
       - key: PORT
-        value: 10000  # Render 會自動設定 PORT 環境變數，確保你的程式讀取這個 PORT (不固定用 10000)
+        value: 10000
