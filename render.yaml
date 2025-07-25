@@ -1,8 +1,10 @@
 services:
   - type: web
     name: leverage-bot
-    runtime: python
+    env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
     build:
-      cwd: src  # 這行讓 build 和 start 都在 src 資料夾裡執行
+      cwd: src
+    start:
+      cwd: src
