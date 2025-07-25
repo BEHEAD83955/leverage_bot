@@ -1,27 +1,32 @@
 from flask import Flask, request
-from telegram import Bot, Update
-from telegram.ext import Dispatcher, CommandHandler, CallbackContext
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 
-TOKEN = "7929780148:AAEKw3t9XUQdc-LkxK2J9tCWwbxqMtahjoU"
-bot = Bot(token=TOKEN)
+import os
+import asyncio
 
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
+
+# 建立 Telegram Bot 應用
+application = Application.builder().token(TOKEN).build()
+
+# 定義 /start 指令
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot 已啟動")
+
+application.add_handler(CommandHandler("start", start))
+
+# 建立 Flask App
 app = Flask(__name__)
 
-dispatcher = Dispatcher(bot=bot, update_queue=None, workers=0)
-
-# 處理 /start 指令
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Bot 已啟動")
-
-dispatcher.add_handler(CommandHandler("start", start))
-
-# webhook 接收處理
+# Webhook 路由
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
+    data = request.get_json(force=True)
+    update = Update.de_json(data, application.bot)
+    asyncio.run(application.process_update(update))
     return "ok"
 
-# ✅ 關鍵：host="0.0.0.0"
+# 啟動 Flask（for local debug，Render 不會跑這段）
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
